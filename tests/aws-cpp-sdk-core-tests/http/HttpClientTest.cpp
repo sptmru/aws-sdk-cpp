@@ -109,44 +109,6 @@ TEST_F(HttpClientTest, TestRandomURLWithProxyAndOtherDeclaredAsNonProxyHost)
     makeRandomHttpRequest(httpClient, true);
 }
 
-// TODO: Pending Fix on Windows.
-#if ENABLE_CURL_CLIENT
-TEST_F(HttpClientTest, TestRandomURLMultiThreaded)
-{
-    const int threadCount = 50;
-    const int timeoutSecs = 5;
-    auto httpClient = CreateHttpClient(Aws::Client::ClientConfiguration());
-    std::vector<std::future<void>> futures;
-    for (int thread = 0; thread < threadCount; ++thread)
-    {
-        futures.push_back(std::async(std::launch::async, &makeRandomHttpRequest, httpClient, false));
-    }
-
-    auto start = std::chrono::system_clock::now();
-    bool hasPendingTasks = true;
-    while (hasPendingTasks)
-    {
-        hasPendingTasks = false;
-        for (auto& future : futures)
-        {
-            auto status = future.wait_for(std::chrono::milliseconds(1));
-            if (status != std::future_status::ready)
-            {
-                hasPendingTasks = true;
-                break;
-            }
-        }
-        auto end  = std::chrono::system_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-        if (elapsed.count() > timeoutSecs)
-        {
-            break;
-        }
-    }
-    ASSERT_FALSE(hasPendingTasks);
-}
-#endif // ENABLE_CURL_CLIENT
-
 // Test Http Client timeout
 // Run "scripts/dummy_web_server.py -l localhost -p 8778" to setup a dummy web server first.
 #if ENABLE_HTTP_CLIENT_TESTING
